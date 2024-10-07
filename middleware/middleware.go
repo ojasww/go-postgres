@@ -170,3 +170,54 @@ func createUser(user models.User) (uuid.UUID, error) {
 
 	return id, nil
 }
+
+// Update user with the given ID
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	id := params["id"]
+
+	user := models.User{}
+
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		log.Fatalf("Error decoding user from request: %v", err)
+	}
+
+	rowsAffected, err := updateUser(id, user)
+	if err != nil {
+		log.Fatalf("Error updating the user: %v", err)
+	}
+
+	updateUUID, _ := uuid.Parse(id)
+
+	res := response{
+		ID:      updateUUID,
+		Message: fmt.Sprintf("Updated rows successfully: %v", rowsAffected),
+	}
+
+	json.NewEncoder(w).Encode(res)
+}
+
+func updateUser(ID string, user models.User) (int64, error) {
+	db := createConnection()
+	defer db.Close()
+
+	sqlQuery := `UPDATE users SET name=$2, age=$3 WHERE id=$1`
+
+	res, err := db.Exec(sqlQuery, ID, user.Name, user.Age)
+	if err != nil {
+		log.Fatalf("Error updating user!: %v", err)
+		// return Nil uuid
+		return 0, err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		log.Fatalf("Error while checking the affected rows: %v", err)
+	}
+
+	fmt.Printf("Total rows/record affected %v", rowsAffected)
+
+	return rowsAffected, nil
+}
