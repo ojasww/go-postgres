@@ -221,3 +221,47 @@ func updateUser(ID string, user models.User) (int64, error) {
 
 	return rowsAffected, nil
 }
+
+// Delete user with the given ID
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	id := params["id"]
+
+	rowsAffected, err := deleteUser(id)
+	if err != nil {
+		log.Fatalf("Error deleting the user: %v", err)
+	}
+
+	deleteUUID, _ := uuid.Parse(id)
+
+	res := response{
+		ID:      deleteUUID,
+		Message: fmt.Sprintf("Deleted rows successfully: %v", rowsAffected),
+	}
+
+	json.NewEncoder(w).Encode(res)
+}
+
+func deleteUser(ID string) (int64, error) {
+	db := createConnection()
+	defer db.Close()
+
+	sqlQuery := `DELETE FROM users WHERE id=$1`
+
+	res, err := db.Exec(sqlQuery, ID)
+	if err != nil {
+		log.Fatalf("Error deleting user!: %v", err)
+		// return Nil uuid
+		return 0, err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		log.Fatalf("Error while checking the affected rows: %v", err)
+	}
+
+	fmt.Printf("Total rows/record affected %v", rowsAffected)
+
+	return rowsAffected, nil
+}

@@ -13,6 +13,7 @@ func Router() *mux.Router {
 	router.HandleFunc("/api/users", middleware.GetAllUsers).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/newuser", middleware.CreateUser).Methods("POST", "OPTIONS")
 	router.HandleFunc("/api/user/{id}", middleware.UpdateUser).Methods("PUT", "OPIONS")
+	router.HandleFunc("/api/user/{id}", middleware.DeleteUser).Methods("DELETE", "OPIONS")
 
 	return router
 }
