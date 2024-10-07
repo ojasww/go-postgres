@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
@@ -121,4 +122,51 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(users)
+}
+
+type response struct {
+	ID      uuid.UUID `json:"id,omitempty"`
+	Message string    `json:"message,omitempty"`
+}
+
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+	user := models.User{}
+
+	// Decode the user from the request body
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		log.Fatalf("Error reading user from request: %v", err)
+	}
+
+	insertID, err := createUser(user)
+	if err != nil {
+		log.Fatalf("Error inserting user: %v", err)
+	}
+
+	res := response{
+		ID:      insertID,
+		Message: "User inserted successfully!",
+	}
+
+	json.NewEncoder(w).Encode(res)
+}
+
+func createUser(user models.User) (uuid.UUID, error) {
+	db := createConnection()
+	defer db.Close()
+
+	sqlQuery := "INSERT INTO users (id, name, age) VALUES ($1, $2, $3) RETURNING id"
+
+	var id uuid.UUID
+
+	err := db.QueryRow(sqlQuery, user.ID, user.Name, user.Age).Scan(&id)
+	if err != nil {
+		log.Fatalf("Error inserting user!: %v", err)
+		// return Nil uuid
+		return uuid.Nil, err
+	}
+
+	log.Printf("Inserted a single record with id: %v", id)
+
+	return id, nil
 }
