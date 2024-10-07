@@ -78,3 +78,47 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(user)
 }
+
+// getAllusers fetches all users from the database
+func getAllUsers() ([]models.User, error) {
+	db := createConnection()
+	defer db.Close()
+
+	users := []models.User{}
+
+	sqlQuery := "SELECT * FROM users"
+
+	rows, err := db.Query(sqlQuery)
+	if err != nil {
+		log.Fatalf("Unable to execute the query. %v", err)
+	}
+
+	defer rows.Close()
+
+	// rows.Next() returns a new boolean for no row present
+	for rows.Next() {
+		var user models.User
+
+		// unmarshal the row object to user
+		err = rows.Scan(&user.ID, &user.Name, &user.Age)
+
+		if err != nil {
+			log.Fatalf("Unable to scan the row. %v", err)
+		}
+
+		// append the user in the users slice
+		users = append(users, user)
+	}
+
+	return users, err
+}
+
+func GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := getAllUsers()
+
+	if err != nil {
+		log.Fatalf("Unable to get the all users : %v!", err)
+	}
+
+	json.NewEncoder(w).Encode(users)
+}
